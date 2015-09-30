@@ -1,0 +1,245 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<title>Simple Paging Grid</title>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<link rel="stylesheet" href="/css/bootstrap.min.css"
+	th:href="@{/css/bootstrap.min.css}"></link>
+<link rel="stylesheet" href="/css/simplePagingGrid-0.6.0.0.css"
+	th:href="@{/css/simplePagingGrid-0.6.0.0.css}"></link>
+
+<script src="/js/jquery-2.1.4.min.js"
+	th:src="@{/js/jquery-2.1.4.min.js}" type="text/javascript"></script>
+<script src="/js/bootstrap.min.js" th:src="@{/js/bootstrap.min.js}"
+	type="text/javascript"></script>
+<script src="/js/handlebars-latest.js"
+	th:src="@{/js/handlebars-latest.js}" type="text/javascript"></script>
+<script src="/js/simplePagingGrid-0.6.0.0.js"
+	th:src="@{/js/simplePagingGrid-0.6.0.0.js}" type="text/javascript"></script>
+
+<script type="text/javascript" th:inline="javascript">
+	$(document).ready(
+			function() {
+				$("#exampleGrid")
+						.simplePagingGrid(
+								{
+									columnNames : [ "First name", "Last name",
+											"Date of birth", "Action" ],
+									columnKeys : [ "firstName", "lastName",
+											"birthDate", null ],
+									sortable : [ true, true, true ],
+									initialSortColumn : "lastName",
+									tableClass : "table table-striped",
+									cellTemplates: [
+										null,
+										null,
+										null,
+										'<span id="{{id}}" class="glyphicon glyphicon-remove" aria-hidden="true"></span>'
+									],
+									rowCreatedEvent: function(row, rowData) {
+										$(row).find(".glyphicon-remove").click(function(event) {
+											$("#idToDelete").val(rowData.id);
+											$("#deleteModal").modal('show');
+										});
+									},
+									dataFunction : function(pageNumber,
+											pageSize, sortColumn, sortOrder,
+											callback) {
+
+										var data = {
+											page : pageNumber,
+											pageSize : pageSize,
+											sortColumn : sortColumn,
+											sortOrder : sortOrder,
+											searchQuery : $("#searchInput")
+													.val()
+										};
+
+										$.ajax({
+											contentType : 'application/json',
+											type : "POST",
+											url : /*[[@{/persons/findAll}]]*/,
+											data : JSON.stringify(data)
+										}).done(function(data) {
+											callback(data);
+										});
+									}
+								});
+
+				var refreshGrid = function() {
+					$("#exampleGrid").simplePagingGrid("refresh",
+									/*[[@{/persons/findAll}]]*/);
+				};
+
+				$("#submitButton").click(
+						function() {
+							refreshGrid();
+						});
+
+				$("#searchInput").change(
+						function() {
+							refreshGrid();
+						});
+						
+				$("#savePersonButton").click(function() {
+					var data = {
+						firstName : $("#inputFirstName").val(),
+						lastName : $("#inputLastName").val(),
+						birthDate : $("#inputBirthDate").val()
+					};
+
+					$.ajax({
+						contentType : 'application/json',
+						type : "POST",
+						url : /*[[@{/persons/create}]]*/,
+						data : JSON.stringify(data)
+					}).done(function(data) {
+						refreshGrid();
+						$('#createModal').modal('hide');
+					});
+				});
+				
+				$("#deletePersonButton").click(function() {
+					$.ajax({
+						contentType : 'application/json',
+						type : "POST",
+						url : /*[[@{/persons/delete}]]*/,
+						data : JSON.stringify($("#idToDelete").val())
+					}).done(function(data) {
+						refreshGrid();
+						$('#deleteModal').modal('hide');
+					});
+				});
+				
+				$('#createModal').on('hidden.bs.modal', function() {
+					$("#inputFirstName").val('')
+					$("#inputLastName").val('')
+					$("#inputBirthDate").val('')
+				})
+			});
+</script>
+</head>
+<body>
+	<nav class="navbar navbar-default">
+		<div class="container-fluid">
+			<div class="pull-left">
+				<a href="https://voxxeddays.com/belgrade15"> <img
+					alt="Voxxed Days Belgrade" src="/img/voxxedDaysLogo.png"
+					th:src="@{/img/voxxedDaysLogo.png}" />
+				</a>
+			</div>
+
+			<div class="navbar-header pull-right">
+				<div class="navbar-form navbar-left">
+					<div class="form-group">
+						<input id="searchInput" type="text" class="form-control"
+							placeholder="Search" />
+					</div>
+					<button id="submitButton" type="button" class="btn btn-default">Submit</button>
+				</div>
+			</div>
+		</div>
+	</nav>
+
+	<div class="mainContainer" style="padding-bottom: 100px">
+		<div style="padding-bottom: 10px;">
+			<div class="pull-right">
+				<button type="button" class="btn btn-primary btn-default"
+					data-toggle="modal" data-target="#createModal">Create a new
+					person</button>
+			</div>
+			<div style="clear: both;"></div>
+		</div>
+
+		<!-- Modal -->
+		<div class="modal fade" id="createModal" tabindex="-1" role="dialog"
+			aria-labelledby="createModalLabel">
+			<div class="modal-dialog" role="document">
+				<div class="modal-content">
+					<div class="modal-header">
+						<button type="button" class="close" data-dismiss="modal"
+							aria-label="Close">
+							<span aria-hidden="true">&times;</span>
+						</button>
+						<h4 class="modal-title" id="createModalLabel">Create a new person</h4>
+					</div>
+					<div class="modal-body">
+						<form class="form-horizontal">
+							<div class="form-group">
+								<label for="inputFirstName" class="col-sm-3 control-label">First
+									name</label>
+								<div class="col-sm-9">
+									<input type="text" class="form-control" id="inputFirstName"
+										placeholder="First name"></input>
+								</div>
+							</div>
+
+							<div class="form-group">
+								<label for="inputLastName" class="col-sm-3 control-label">Last
+									name</label>
+								<div class="col-sm-9">
+									<input type="text" class="form-control" id="inputLastName"
+										placeholder="Last name"></input>
+								</div>
+							</div>
+
+							<div class="form-group">
+								<label for="inputBirthDate" class="col-sm-3 control-label">Date
+									of birth</label>
+								<div class="col-sm-9">
+									<input type="text" class="form-control" id="inputBirthDate"
+										placeholder="Date of birth"></input>
+								</div>
+							</div>
+						</form>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+						<button id="savePersonButton" type="button"
+							class="btn btn-primary">Save person</button>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div id="exampleGrid"></div>
+	</div>
+
+	<nav class="navbar navbar-default navbar-fixed-bottom">
+		<div class="container-fluid">
+			<div align="center" style="padding-top: 10px; padding-bottom: 10px;">
+				<div>
+					<a href="http://www.pamet.co.rs"> <img alt="Pamet d.o.o."
+						src="/img/pametLogo.png" th:src="@{/img/pametLogo.png}" />
+					</a>
+				</div>
+			</div>
+		</div>
+	</nav>
+
+	<!-- Delete Modal -->
+	<div class="modal fade" id="deleteModal" tabindex="-1" role="dialog"
+		aria-labelledby="deleteModalLabel">
+		<div class="modal-dialog" role="document">
+			<div class="modal-content">
+				<div class="modal-header">
+					<button type="button" class="close" data-dismiss="modal"
+						aria-label="Close">
+						<span aria-hidden="true">&times;</span>
+					</button>
+					<h4 class="modal-title" id="deleteModalLabel">Delete a person</h4>
+				</div>
+				<div class="modal-body">
+					<input type="hidden" id="idToDelete"></input>
+					<div>Are you sure you want to delete selected person?</div>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-default" data-dismiss="modal">No</button>
+					<button id="deletePersonButton" type="button" class="btn btn-primary">Yes</button>
+				</div>
+			</div>
+		</div>
+	</div>
+</body>
+</html>
